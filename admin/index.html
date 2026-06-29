@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Bảng Quản Trị VPA - Full Control</title>
+    <style>
+        body { background: #2f3136; color: #fff; font-family: sans-serif; margin: 0; padding: 20px; }
+        .box { background: #202225; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #3e4249; }
+        input, textarea { width: 100%; padding: 10px; margin: 5px 0; border-radius: 4px; border: 1px solid #333; background: #2f3136; color: white; box-sizing: border-box; }
+        button { padding: 10px 15px; border: none; border-radius: 4px; background: #5865f2; color: white; cursor: pointer; font-weight: bold; margin: 5px 0; }
+        .hidden { display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #333; padding: 10px; text-align: left; }
+        .admin-panel { max-width: 900px; margin: auto; }
+        .notify-card { background: #2f3136; padding: 15px; border-radius: 6px; border-left: 5px solid #5865f2; margin-top: 10px; }
+        .login-box { background: #2f3136; padding: 30px; border-radius: 12px; border: 2px solid #5865f2; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; }
+        /* Style cho custom error message */
+        #error-msg { background: #ed4245; color: white; padding: 10px; border-radius: 5px; margin-top: 15px; display: none; font-size: 14px; font-weight: bold; border-left: 5px solid #b32a2d; }
+    </style>
+</head>
+<body>
+
+    <div id="lock-screen" class="admin-panel" style="max-width: 400px; margin-top: 100px;">
+        <div class="login-box">
+            <h2 style="color:#5865f2; margin-top:0;">QUẢN TRỊ VIÊN VPA</h2>
+            <p style="font-size:14px; color:#b9bbbe;">Vui lòng xác thực danh tính</p>
+            <input type="text" id="a-user" placeholder="Tên đăng nhập">
+            <input type="password" id="a-pass" placeholder="Mật khẩu tài khoản">
+            <input type="password" id="a-tool" placeholder="Mật khẩu Admin Tool">
+            <button onclick="loginAdmin()" style="width: 100%; margin-top:15px; font-size:16px;">ĐĂNG NHẬP</button>
+            <div id="error-msg">⚠️ Sai thông tin xác thực! Vui lòng kiểm tra lại.</div>
+        </div>
+    </div>
+
+    <div id="admin-content" class="admin-panel hidden">
+        <h1>🛠 BẢNG ĐIỀU KHIỂN VPA</h1>
+        
+        <div class="box">
+            <h3>📢 Thông báo & Vinh danh</h3>
+            <input type="text" id="n-title" placeholder="Tiêu đề">
+            <textarea id="n-desc" placeholder="Nội dung..."></textarea>
+            <button onclick="saveNotify()">Đăng Thông Báo</button>
+            <hr>
+            <input type="text" id="h-user" placeholder="Người vinh danh">
+            <input type="text" id="h-reason" placeholder="Lý do">
+            <button onclick="saveHonor()" style="background:#f1c40f; color:#000">VINH DANH</button>
+        </div>
+
+        <div class="box">
+            <h3>🚫 Quản lý Ban / Role</h3>
+            <input type="text" id="target-user" placeholder="Nhập username...">
+            <input type="text" id="target-reason" placeholder="Lý do...">
+            <button class="ban-btn" onclick="banUser()" style="background:#ed4245">BAN</button>
+            <button onclick="unbanUser()" style="background:#7289da">GỠ BAN</button>
+            <hr>
+            <input type="text" id="new-role" placeholder="Tên Role">
+            <button onclick="addRole()" style="background:#2ecc71">ADD/THAY ĐỔI ROLE</button>
+            <button onclick="removeRole()" style="background:#99aab5">XÓA ROLE</button>
+        </div>
+
+        <div class="box">
+            <h3>🔍 Check Acc (Danh sách toàn bộ dữ liệu)</h3>
+            <table id="user-table">
+                <thead>
+                    <tr><th>Username</th><th>Pass</th><th>ID</th><th>Bio</th><th>Hành động</th></tr>
+                </thead>
+                <tbody id="user-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function loginAdmin() {
+            const tKey = "YWRtaW50b29sMTIz"; 
+            const decodedTool = atob(tKey);
+            const errBox = document.getElementById('error-msg');
+
+            if(document.getElementById('a-user').value === localStorage.getItem('user') && 
+               document.getElementById('a-pass').value === localStorage.getItem('pass') && 
+               document.getElementById('a-tool').value === decodedTool) {
+                document.getElementById('lock-screen').classList.add('hidden');
+                document.getElementById('admin-content').classList.remove('hidden');
+                localStorage.setItem('isAdmin', 'true');
+                loadUserList();
+            } else { 
+                errBox.style.display = 'block';
+                setTimeout(() => { errBox.style.display = 'none'; }, 3000);
+            }
+        }
+
+        function saveNotify() {
+            const title = document.getElementById('n-title').value;
+            const desc = document.getElementById('n-desc').value;
+            const time = new Date().toLocaleString();
+            
+            const htmlContent = `
+                <div class="notify-card">
+                    <h3 style="margin:0; color:#5865f2;">📢 ${title}</h3>
+                    <p style="margin:10px 0;">${desc}</p>
+                    <small style="color:#72767d;">Đăng lúc: ${time}</small>
+                </div>`;
+            
+            localStorage.setItem('notifyData', htmlContent);
+            alert("Thông báo đã được gửi với giao diện mới!");
+        }
+
+        function saveHonor() {
+            const u = document.getElementById('h-user').value;
+            const r = document.getElementById('h-reason').value;
+            localStorage.setItem('vinhdanhData', `<div class="list-item">🏆 <b>${u}</b>: ${r}</div>`);
+            alert("Đã vinh danh!");
+        }
+
+        function banUser() {
+            localStorage.setItem('bannedUser', document.getElementById('target-user').value);
+            localStorage.setItem('banReason', document.getElementById('target-reason').value);
+            alert("Đã ban!");
+        }
+
+        function unbanUser() {
+            localStorage.removeItem('bannedUser');
+            alert("Đã gỡ ban!");
+        }
+
+        function addRole() {
+            localStorage.setItem('role_' + document.getElementById('target-user').value, document.getElementById('new-role').value);
+            alert("Đã cấp role!");
+        }
+
+        function removeRole() {
+            localStorage.removeItem('role_' + document.getElementById('target-user').value);
+            alert("Đã xóa role!");
+        }
+
+        function loadUserList() {
+            const tbody = document.getElementById('user-list');
+            tbody.innerHTML = `<tr>
+                <td>${localStorage.getItem('user') || 'N/A'}</td>
+                <td>${localStorage.getItem('pass') || 'N/A'}</td>
+                <td>${localStorage.getItem('uid') || 'N/A'}</td>
+                <td>${localStorage.getItem('bio') || 'Chưa có'}</td>
+                <td><button onclick="alert('Đã xóa account')">XÓA ACC</button></td>
+            </tr>`;
+        }
+    </script>
+</body>
+</html>
